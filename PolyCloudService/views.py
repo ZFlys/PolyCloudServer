@@ -124,38 +124,62 @@ def get_polymer_no_list_activity_data(request):
 
 def get_material_detail(request):
     material_no = request.POST.get('materialNo')
-    # material_no = ""
     if material_no == "" or "xx" in material_no:
         material_no = '1018LA'
     utTime = models.TestparaUt.objects.get(id=1).time.split(",")
     nirWaveLength = models.TestparaNir.objects.get(id=1).wave_length.split(",")
     ramanWaveNum = models.TestparaRaman.objects.get(id=1).wave_num.split(",")[77:-107]
     if "PPC" in material_no:
-        pass
-    gmMaterial = models.GeneralMaterial.objects.get(material_no=material_no)
-    gmId = gmMaterial.id
-    materialDetail = models.GeneralMaterial.objects\
-        .values("material_name", "material_no", "processing_level", "feature", "application",
-                "material_type", "density", "melting_point", "melt_index", "distorion_temp", "glass_tra_temp",
-                "tensile_strength", "tensile_modulus", "elongation_at_break", "bending_strength",
-                "bending_modulus", "impact_strength", "others",  manuOrComp=F("manufacturer"))\
-        .filter(material_no=material_no)
-    materialTestDetail = models.GmProcess.objects.get(gm_id=gmId)
-    if gmMaterial.rheological_test is None:
-        rlitems = []
-        rlitemsfit = []
+        sysuMaterial = models.ResearchSysu.objects.get(component_num=material_no)
+        materialDetail = models.ResearchSysu.objects\
+            .values("material_name", "processing_level", "feature", "application", "material_type",
+                    "density", "melting_point", "melt_index", "glass_tra_temp", "tensile_modulus",
+                    "bending_strength", "bending_modulus", "others", material_no=F("methods"),
+                    manuOrComp=F("component"), distorion_temp=F("hdt"), tensile_strength=F("tys"),
+                    elongation_at_break=F("tensile_fracture_break"), impact_strength=F("izod"))\
+            .filter(component_num=material_no)
+        if sysuMaterial.rheological_test is None:
+            rlitems = []
+            rlitemsfit = []
+        else:
+            rldata = json.loads(sysuMaterial.rheological_test)['niandu']
+            rldatafit = json.loads(sysuMaterial.rheological_test)['niandu_fit']
+            rlitems = list(rldata.items())
+            rlitemsfit = list(rldatafit.items())
+
+        materialDetailData = {'materialDetail': list(materialDetail),
+                              'rlScatterData': rlitems,
+                              'rlFitData': rlitemsfit,
+                              'materialUt': list(zip(utTime, sysuMaterial.ut_data.split(","))),
+                              'materialNir': list(zip(nirWaveLength, sysuMaterial.nir_data.split(","))),
+                              'materialRaman': list(zip(ramanWaveNum, sysuMaterial.raman_data.split(",")[77:-107]))
+                              }
     else:
-        rldata = json.loads(gmMaterial.rheological_test)['niandu']
-        rldatafit = json.loads(gmMaterial.rheological_test)['niandu_fit']
-        rlitems = list(rldata.items())
-        rlitemsfit = list(rldatafit.items())
-    materialDetailData = {'materialDetail': list(materialDetail),
-                          'rlScatterData': rlitems,
-                          'rlFitData': rlitemsfit,
-                          'materialUt': list(zip(utTime, materialTestDetail.ut_data.split(","))),
-                          'materialNir': list(zip(nirWaveLength, materialTestDetail.nir_data.split(","))),
-                          'materialRaman': list(zip(ramanWaveNum, materialTestDetail.raman_data.split(",")[77:-107]))
-                          }
+        gmMaterial = models.GeneralMaterial.objects.get(material_no=material_no)
+        gmId = gmMaterial.id
+        materialDetail = models.GeneralMaterial.objects\
+            .values("material_name", "material_no", "processing_level", "feature", "application",
+                    "material_type", "density", "melting_point", "melt_index", "distorion_temp", "glass_tra_temp",
+                    "tensile_strength", "tensile_modulus", "elongation_at_break", "bending_strength",
+                    "bending_modulus", "impact_strength", "others",  manuOrComp=F("manufacturer"))\
+            .filter(material_no=material_no)
+        materialTestDetail = models.GmProcess.objects.get(gm_id=gmId)
+        if gmMaterial.rheological_test is None:
+            rlitems = []
+            rlitemsfit = []
+        else:
+            rldata = json.loads(gmMaterial.rheological_test)['niandu']
+            rldatafit = json.loads(gmMaterial.rheological_test)['niandu_fit']
+            rlitems = list(rldata.items())
+            rlitemsfit = list(rldatafit.items())
+
+        materialDetailData = {'materialDetail': list(materialDetail),
+                              'rlScatterData': rlitems,
+                              'rlFitData': rlitemsfit,
+                              'materialUt': list(zip(utTime, materialTestDetail.ut_data.split(","))),
+                              'materialNir': list(zip(nirWaveLength, materialTestDetail.nir_data.split(","))),
+                              'materialRaman': list(zip(ramanWaveNum, materialTestDetail.raman_data.split(",")[77:-107]))
+                              }
 
     return HttpResponse(json.dumps(materialDetailData, ensure_ascii=False))
 
