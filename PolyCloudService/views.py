@@ -7,6 +7,14 @@ import hashlib
 from PolyCloudService import models
 from django.core import serializers
 from django.db.models import F
+import random
+
+
+def hash_code(s, salt='scutpoly'):
+    h = hashlib.sha256()
+    s += salt
+    h.update(s.encode())
+    return h.hexdigest()
 
 
 def app_service(request):
@@ -184,9 +192,31 @@ def get_material_detail(request):
     return HttpResponse(json.dumps(materialDetailData, ensure_ascii=False))
 
 
-def hash_code(s, salt='scutpoly'):
-    h = hashlib.sha256()
-    s += salt
-    h.update(s.encode())
-    return h.hexdigest()
+def search_material(request):
+    search_name = request.POST.get("searchName")
+    if search_name == "":
+        status = "emptyError"
+    try:
+        get_material = models.GeneralMaterial.objects.get(material_no=search_name.upper())
+        search_name = get_material.material_no
+        status = "success"
+    except ObjectDoesNotExist:
+        try:
+            get_material = models.ResearchSysu.objects.get(component_num=search_name.upper())
+            search_name = get_material.component_num
+            status = "success"
+        except ObjectDoesNotExist:
+            status = "emptyMaterial"
+    result = {'status': status, 'materialName': search_name}
+    return HttpResponse(json.dumps(result, ensure_ascii=False))
 
+
+def gen_monitor_data(request):
+    xIndex = request.POST.get("xIndex")
+    yValue = random.uniform(1, 12)
+    nirWaveLength = models.TestparaNir.objects.get(id=1).wave_length.split(",")
+    nir = models.ResearchSysu.objects.get(id=int(yValue)).nir_data.split(",")
+    monitorData = {'nirMonitorData': list(zip(nirWaveLength, nir)),
+                   'compositionMonitorData': [str(xIndex), str(yValue * 10)]}
+
+    return HttpResponse(json.dumps(monitorData))

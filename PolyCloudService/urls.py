@@ -10,4 +10,6 @@ urlpatterns = [
     path('GetMaterialName', PolyCloudService.views.get_material_list_activity_data),
     path('GetMaterialNo', PolyCloudService.views.get_polymer_no_list_activity_data),
     path('GetMaterialDetail', PolyCloudService.views.get_material_detail),
+    path('SearchMaterial', PolyCloudService.views.search_material),
+    path('GetMonitorData', PolyCloudService.views.gen_monitor_data),
 ]
