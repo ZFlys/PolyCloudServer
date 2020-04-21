@@ -8,6 +8,7 @@ from PolyCloudService import models
 from django.core import serializers
 from django.db.models import F
 import random
+import requests
 
 
 def hash_code(s, salt='scutpoly'):
@@ -213,10 +214,18 @@ def search_material(request):
 
 def gen_monitor_data(request):
     xIndex = request.POST.get("xIndex")
-    yValue = random.uniform(1, 12)
+    xIndex = int(xIndex)
+    if (xIndex % 100) == 0:
+        xId = 1
+    else:
+        xId = xIndex
+    onlineNir = models.NirMonitorTestData.objects.get(id=(xId % 100)).nir_data.split(",")
+    responseNir = list(map(eval, onlineNir))
+    predict_request = '{"inputs":%s}' % [responseNir]
+    response = requests.post('http://localhost:8501/v1/models/composition_monitor:predict', data=predict_request)
+    response.raise_for_status()
+    prediction = response.json()['outputs'][0][0]
     nirWaveLength = models.TestparaNir.objects.get(id=1).wave_length.split(",")
-    nir = models.ResearchSysu.objects.get(id=int(yValue)).nir_data.split(",")
-    monitorData = {'nirMonitorData': list(zip(nirWaveLength, nir)),
-                   'compositionMonitorData': [str(xIndex), str(yValue * 10)]}
-
+    monitorData = {'nirMonitorData': list(zip(nirWaveLength, onlineNir)),
+                   'compositionMonitorData': [str(xIndex), str(prediction)]}
     return HttpResponse(json.dumps(monitorData))

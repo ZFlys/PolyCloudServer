@@ -194,6 +194,15 @@ class MainAtGenName(models.Model):
         db_table = 'main_at_gen_name'
 
 
+class NirMonitorTestData(models.Model):
+    id = models.IntegerField(primary_key=True)
+    nir_data = models.TextField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'nir_monitor_test_data'
+
+
 class ResearchSysu(models.Model):
     material_name = models.CharField(max_length=20, blank=True, null=True)
     methods = models.CharField(max_length=20, blank=True, null=True)
